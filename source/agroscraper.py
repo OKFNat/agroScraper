@@ -12,7 +12,7 @@ Output from the #gutedaten Hackathon in Graz, Sat. 28. Nov. 2015
     {
         "id": int,
         "recipient": "str",
-        "zip code": int,
+        "postcode": int,
         "municipality": "str",
         "year": int,
         "total_amount": float
@@ -44,6 +44,22 @@ import time
 import json
 
 
+import sys
+
+
+def drawProgressBar(percent, barLen = 20):
+    sys.stdout.write("\r")
+    progress = ""
+    for i in range(barLen):
+        if i < int(barLen * percent):
+            progress += "="
+        else:
+            progress += " "
+    sys.stdout.write("[ %s ] %.2f%%" % (progress, percent * 100))
+    sys.stdout.flush()
+
+
+
 url = 'http://transparenzdatenbank.at/suche'
 
 header = {"Accept": "application/json, text/plain, */*",
@@ -62,17 +78,12 @@ header = {"Accept": "application/json, text/plain, */*",
 payload = "{\"name\":\"\", \"betrag_von\":\"\", \"betrag_bis\":\"\", \"gemeinde\":\"\", \"massnahme\":null,\"jahr\":2014, \"sort\":\"name\"}"
 
 
-raw = []
 response = requests.request("POST", url, data=payload, headers = header)
-raw.extend(response.json())
+raw = response.json()
 
 # make a quick save
 with open("firstround.json", "w") as outfile:
-    json.dump(response.json(), outfile)
-
-
-ids = [r.get("id") for r in raw]
-
+    json.dump(raw, outfile)
 
 # create new header for detailed search
 
@@ -87,13 +98,48 @@ searchheader = {'Host': 'transparenzdatenbank.at',
                  }
 
 
-details = []
+results = []
 
-for id_ in ids[:10]:
-    searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %id_
-    detail = requests.get(searchurl, searchheader)
-    details.extend(detail.json())
+# for progress bar
+progress = 0.0
+maxi = len(raw)
+
+for r in raw:
+    result = {}
+    result["id"] = int(r.get("id"))
+    result["recipient"] = r.get("name")
+
+    # 
+    if r.get("plz") is None:
+        result["postcode"] = "NA"
+    else:
+        result["postcode"] = int(r.get("plz"))
+        
+    result["municipality"] = r.get("gemeinde")
+    result["year"] = int(r.get("jahr"))
+    result["total_amount"] = float(r.get("betrag"))
+    result["details"] = []
 
 
+    searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %r.get("id")
+    rawdetails = requests.get(searchurl, searchheader).json()
+    for rd in rawdetails:
+        detail = {}
 
-results = {}
+        detail["id"] = int(rd.get("id"))
+        detail["type"] = rd.get("bezeichnung")
+        detail["description"] = rd.get("beschreibung")
+        detail["partial_amount"] = float(rd.get("betrag"))
+
+        result["details"].append(detail)
+
+    results.append(result)
+
+    # more progress
+    progress += 1
+    percent = progress/maxi
+    drawProgressBar(percent)
+
+
+with open("agrofunding.json", "w") as outfile:
+    json.dump(results, outfile)
