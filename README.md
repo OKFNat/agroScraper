@@ -11,7 +11,14 @@ Produces two JSON-files:
 * firstround.json of fundings, containing IDs, names of recipients, postcode and municipality, year and total amount.
 * agrofunding.json of fundings, containing all of the above plus a detailed description per funding with type, description and partial amounts.
 
+**Read data**
 
+```
+import json
+
+with open("agrofunding.json", "r") as infile:
+    results = json.load(infile)
+```
 
 
 ## data model
