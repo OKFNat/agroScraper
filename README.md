@@ -3,9 +3,9 @@ Getting structured data out of transparenzdatenbank, which shows EU aids for Aus
 
 ## usage
 
-'''
+```python
 python agroscraper.py
-'''
+```
 
 Produces two JSON-files:
 * firstround.json of fundings, containing IDs, names of recipients, postcode and municipality, year and total amount.
@@ -16,7 +16,7 @@ Produces two JSON-files:
 
 ## data model
 
-
+```
 [
 	{
 		"id": int,
@@ -35,3 +35,4 @@ Produces two JSON-files:
 		]	
 	}
 ]
+```
