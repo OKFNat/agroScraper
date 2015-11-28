@@ -1,9 +1,9 @@
-# agroscraper
+# agroScraper
 Getting structured data out of transparenzdatenbank, which shows EU aids for Austrian agricultural businesses.
 
 ## usage
 
-'''python
+'''
 python agroscraper.py
 '''
 
