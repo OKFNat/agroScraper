@@ -58,7 +58,6 @@ def drawProgressBar(percent, barLen = 20):
     sys.stdout.flush()
 
 
-
 url = 'http://transparenzdatenbank.at/suche'
 
 header = {"Accept": "application/json, text/plain, */*",
@@ -77,20 +76,7 @@ header = {"Accept": "application/json, text/plain, */*",
 # json string
 payload = "{\"name\":\"\", \"betrag_von\":\"\", \"betrag_bis\":\"\", \"gemeinde\":\"\", \"massnahme\":null,\"jahr\":2014, \"sort\":\"name\"}"
 
-
-
-try: # load cached search
-	with open("firstround.json", "r") as infile:
-		raw = json.load(infile)
-except:
-	response = requests.request("POST", url, data=payload, headers = header)
-	raw = response.json()
-	# make a quick save
-	with open("firstround.json", "w") as outfile:
-	    json.dump(raw, outfile)
-
 # create new header for detailed search
-
 searchheader = {'Host': 'transparenzdatenbank.at',
                  'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0',
                  'Accept': 'application/json, text/plain, */*',
@@ -101,21 +87,77 @@ searchheader = {'Host': 'transparenzdatenbank.at',
                  'Cookie': 'AMA=!nuCdkyly1f7Zu8TJc9WWi6/Juy2r0rwBzfMkAVDZdlK7ppJA07eM8ERA7mL9kNBeY+AJZtNYoza5Ivk=; TS018cbf1b=015c95df5d1c780212c177d6031479ab2c968358d311dc333c0baee3ece7918812734b06fc4e15c151ca4dfe6a81a3b37c01e323c9'
                  }
 
-# to hold detailed results
-results = []
 
-# for progress bar
-progress = 0.0
-maxi = len(raw)
+def get_cache():
+    try: # load cached search
+        with open("firstround.json", "r") as infile:
+            raw = json.load(infile)
+    except: # if nothing cached
+        raw =get_raw()
+        # make a quick save
+        with open("firstround.json", "w") as outfile:
+            json.dump(raw, outfile)
 
+    try: # load cached details
+        with open("agrofunding.json", "r") as infile:
+            results = json.load(infile)
+    except: # if nothing cached
+        results = []
 
+    return raw, results
 
-for r in raw:
+def get_missing_ids(raw, results):
+    """
+    Compares cached results with overall expected IDs,
+    returns missing ones.
+    """
+    all_ids = set(raw.keys())
+    cached_ids = set([r.get("id") for r in results])
+    print("There are {0} IDs in the dataset, we already have {1}. {2} are missing.".format(len(all_ids), len(cached_ids), len(all_ids) - len(cached_ids)))
+    return all_ids - cached_ids
+
+def get_raw():
+    """
+    If not yet cached, will get the raw data.
+    """
+    response = requests.request("POST", url, data=payload, headers = header)
+    raw = response.json()
+    return {r.get("id"):r for r in raw}
+
+def crawl(raw, results, missing_ids):
+    """
+    Adds missing results by iterating over missing IDs.
+    """
+    # for progress bar
+    progress = 0.0
+    maxi = len(missing_ids)
+
+    for id_ in missing_ids:
+
+        try:
+            r = raw.get(id_)
+            results.append(enhance_raw(r, id_))
+
+            # more progress
+            progress += 1
+            percent = progress/maxi
+            drawProgressBar(percent)
+        except: # some server/network error
+            # store cache
+            with open("agrofunding.json", "w") as outfile:
+                json.dump(results, outfile)
+    return results
+
+def enhance_raw(r, missing_id):
+    """
+    Reformats the raw data.
+    Adds the detailed information to a raw search result.
+    """
     result = {}
     result["id"] = int(r.get("id"))
     result["recipient"] = r.get("name")
 
-    # 
+    # missing values for plz
     if r.get("plz") is None:
         result["postcode"] = "NA"
     else:
@@ -124,38 +166,48 @@ for r in raw:
     result["municipality"] = r.get("gemeinde")
     result["year"] = int(r.get("jahr"))
     result["total_amount"] = float(r.get("betrag"))
-    result["details"] = []
+    result["details"] = get_details(r.get("id"))
 
+    return result
 
-    searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %r.get("id")
+def get_details(id_):
+    """
+    Gets the detailed information for a funding ID.
+    """
+    details = []
+
+    searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %id_
     rawdetails = requests.request("GET", searchurl, headers = searchheader).json()
     for rd in rawdetails:
         detail = {}
-
         detail["id"] = int(rd.get("id"))
         detail["type"] = rd.get("bezeichnung")
         detail["description"] = rd.get("beschreibung")
         detail["partial_amount"] = float(rd.get("betrag"))
+        details.append(detail)
+    return details
 
-        result["details"].append(detail)
+def save2csv(results, filename):
+    with open(filename+".csv", "w") as csvfile:
+        agrowriter = csv.writer(csvfile, delimiter = ",", quotechar='"')
+        agrowriter.writerow(["id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"])
+        for result in results:
+            metadata = [result.get("id"), result.get("recipient"), result.get("year"), result.get("postcode"), result.get("municipality"), result.get("total_amount")]
+            for detail in result.get("details"):
+                data = [detail.get("id"), detail.get("type"), detail.get("partial_amount")]
+                agrowriter.writerow(metadata+data)
 
-    results.append(result)
+def main():
+    raw, results = get_cache()
+    missing_ids = get_missing_ids(raw, results)
+    results = crawl(raw, results, missing_ids)
 
-    # more progress
-    progress += 1
-    percent = progress/maxi
-    drawProgressBar(percent)
+    # store final
+    with open("agrofunding.json", "w") as outfile:
+        json.dump(results, outfile)
+
+    save2csv(results, "agrofunding")
 
 
-with open("agrofunding.json", "w") as outfile:
-    json.dump(results, outfile)
-
-
-with open("agrofunding.csv", "w") as csvfile:
-	agrowriter = csv.writer(csvfile, delimiter = ",", quotechar='"')
-	agrowriter.writerow(["id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"])
-	for result in results[:3]:
-	    metadata = [result.get("id"), result.get("recipient"), result.get("year"), result.get("postcode"), result.get("municipality"), result.get("total_amount")]
-	    for detail in result.get("details"):
-	        data = [detail.get("id"), detail.get("type"), detail.get("partial_amount")]
-	        agrowriter.writerow(metadata+data)
+if __name__ == '__main__':
+    main()
