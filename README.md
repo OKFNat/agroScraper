@@ -3,8 +3,10 @@ Getting structured data out of transparenzdatenbank, which shows EU aids for Aus
 
 ## usage
 
+You need Python 3 for running this, it handles encoding better.
+
 ```python
-python agroscraper.py
+python3 agroscraper.py
 ```
 
 Produces two JSON-files:
