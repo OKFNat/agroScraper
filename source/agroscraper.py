@@ -110,7 +110,7 @@ maxi = len(raw)
 
 
 
-for r in raw[:10]:
+for r in raw:
     result = {}
     result["id"] = int(r.get("id"))
     result["recipient"] = r.get("name")
