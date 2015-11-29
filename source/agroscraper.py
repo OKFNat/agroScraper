@@ -1,4 +1,4 @@
-#!/bin/env python2
+#!/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -39,10 +39,9 @@ __status__ = "Prototype" # 'Development', 'Production' or 'Prototype'
 
 
 import requests
-import time
 
 import json
-
+import csv
 
 import sys
 
@@ -75,15 +74,20 @@ header = {"Accept": "application/json, text/plain, */*",
            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0"
            }
 
+# json string
 payload = "{\"name\":\"\", \"betrag_von\":\"\", \"betrag_bis\":\"\", \"gemeinde\":\"\", \"massnahme\":null,\"jahr\":2014, \"sort\":\"name\"}"
 
 
-response = requests.request("POST", url, data=payload, headers = header)
-raw = response.json()
 
-# make a quick save
-with open("firstround.json", "w") as outfile:
-    json.dump(raw, outfile)
+try: # load cached search
+	with open("firstround.json", "r") as infile:
+		raw = json.load(infile)
+except:
+	response = requests.request("POST", url, data=payload, headers = header)
+	raw = response.json()
+	# make a quick save
+	with open("firstround.json", "w") as outfile:
+	    json.dump(raw, outfile)
 
 # create new header for detailed search
 
@@ -97,14 +101,16 @@ searchheader = {'Host': 'transparenzdatenbank.at',
                  'Cookie': 'AMA=!nuCdkyly1f7Zu8TJc9WWi6/Juy2r0rwBzfMkAVDZdlK7ppJA07eM8ERA7mL9kNBeY+AJZtNYoza5Ivk=; TS018cbf1b=015c95df5d1c780212c177d6031479ab2c968358d311dc333c0baee3ece7918812734b06fc4e15c151ca4dfe6a81a3b37c01e323c9'
                  }
 
-
+# to hold detailed results
 results = []
 
 # for progress bar
 progress = 0.0
 maxi = len(raw)
 
-for r in raw:
+
+
+for r in raw[:10]:
     result = {}
     result["id"] = int(r.get("id"))
     result["recipient"] = r.get("name")
@@ -122,7 +128,7 @@ for r in raw:
 
 
     searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %r.get("id")
-    rawdetails = requests.get(searchurl, searchheader).json()
+    rawdetails = requests.request("GET", searchurl, headers = searchheader).json()
     for rd in rawdetails:
         detail = {}
 
@@ -143,3 +149,13 @@ for r in raw:
 
 with open("agrofunding.json", "w") as outfile:
     json.dump(results, outfile)
+
+
+with open("agrofunding.csv", "w") as csvfile:
+	agrowriter = csv.writer(csvfile, delimiter = ",", quotechar='"')
+	agrowriter.writerow(["id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"])
+	for result in results[:3]:
+	    metadata = [result.get("id"), result.get("recipient"), result.get("year"), result.get("postcode"), result.get("municipality"), result.get("total_amount")]
+	    for detail in result.get("details"):
+	        data = [detail.get("id"), detail.get("type"), detail.get("partial_amount")]
+	        agrowriter.writerow(metadata+data)
