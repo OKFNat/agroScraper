@@ -26,7 +26,7 @@ with open("agrofunding.json", "r") as infile:
 ## data model
 
 ```
-[
+{id:
 	{
 		"id": int,
 		"recipient": "str",
@@ -43,5 +43,5 @@ with open("agrofunding.json", "r") as infile:
 			}
 		]	
 	}
-]
+}
 ```
