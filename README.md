@@ -23,7 +23,7 @@ with open("agrofunding.json", "r") as infile:
 ```
 
 
-## data model
+## data model of json
 
 ```
 {id:

@@ -197,14 +197,16 @@ def get_details(id_):
     return details
 
 def save2csv(results, filename):
+    i = 0
     with open(filename+".csv", "w") as csvfile:
         agrowriter = csv.writer(csvfile, delimiter = ",", quotechar='"')
-        agrowriter.writerow(["id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"])
+        agrowriter.writerow(["unique_id", "funding_id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"])
         for result in results.values():
-            metadata = [result.get("id"), result.get("recipient"), result.get("year"), result.get("postcode"), result.get("municipality"), result.get("total_amount")]
+            metadata = [i, result.get("id"), result.get("recipient"), result.get("year"), result.get("postcode"), result.get("municipality"), result.get("total_amount")]
             for detail in result.get("details"):
                 data = [detail.get("id"), detail.get("type"), detail.get("partial_amount")]
-                agrowriter.writerow(metadata+data)
+                agrowriter.writerow([i]+metadata+data)
+                i += 1
 
 def main():
     raw, old_results = get_cache()
