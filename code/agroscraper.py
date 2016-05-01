@@ -22,7 +22,7 @@ Output from the #gutedaten Hackathon in Graz, Sat. 28. Nov. 2015
                 "description": "str",
                 "partial_amount": float
             }
-        ]   
+        ]
     }
 }
 """
@@ -39,27 +39,23 @@ __status__ = "Prototype" # 'Development', 'Production' or 'Prototype'
 
 import requests
 
+import os
+import sys
+import time
+import argparse
+
 import json
 import csv
 
-import sys
 
-
-def drawProgressBar(percent, barLen = 20):
-    sys.stdout.write("\r")
-    progress = ""
-    for i in range(barLen):
-        if i < int(barLen * percent):
-            progress += "="
-        else:
-            progress += " "
-    sys.stdout.write("[ %s ] %.2f%%" % (progress, percent * 100))
-    sys.stdout.flush()
-
+parser = argparse.ArgumentParser(description='Extracts structured data from transparenzdatenbank.at and exports it to JSON and CSV.')
+parser.add_argument('--output', dest='outputfolder', help='relative or absolute path of the output folder')
+parser.add_argument('--year', dest='year', help='year of funding data to request')
+args = parser.parse_args()
 
 url = 'http://transparenzdatenbank.at/suche'
 
-header = {"Accept": "application/json, text/plain, */*",
+rawheader = {"Accept": "application/json, text/plain, */*",
            "Accept-Encoding": "gzip, deflate",
            "Accept-Language": "de,en-US;q=0.7,en;q=0.3",
            "Content-Length": "100",
@@ -73,10 +69,12 @@ header = {"Accept": "application/json, text/plain, */*",
            }
 
 # json string
-payload = "{\"name\":\"\", \"betrag_von\":\"\", \"betrag_bis\":\"\", \"gemeinde\":\"\", \"massnahme\":null,\"jahr\":2014, \"sort\":\"name\"}"
+payload = "{\"name\":\"\", \"betrag_von\":\"\", \"betrag_bis\":\"\", \
+            \"gemeinde\":\"\", \"massnahme\":null, \
+            \"jahr\":%s, \"sort\":\"name\"}" %args.year
 
 # create new header for detailed search
-searchheader = {'Host': 'transparenzdatenbank.at',
+detailsheader = {'Host': 'transparenzdatenbank.at',
                  'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0',
                  'Accept': 'application/json, text/plain, */*',
                  'Accept-Language': 'de,en-US;q=0.7,en;q=0.3',
@@ -86,21 +84,39 @@ searchheader = {'Host': 'transparenzdatenbank.at',
                  }
 
 
+def drawProgressBar(percent, barLen = 20):
+    """
+    Draws a progress bar to the command line.
+    """
+    sys.stdout.write("\r")
+    progress = ""
+    for i in range(barLen):
+        if i < int(barLen * percent):
+            progress += "="
+        else:
+            progress += " "
+    sys.stdout.write("[ %s ] %.2f%%" % (progress, percent * 100))
+    sys.stdout.flush()
+
+
 def get_cache():
+    """
+    If nothing cached, will get the raw data.
+    """
     try: # load cached search
-        with open("firstround.json", "r") as infile:
+        with open("agrofunding.json", "r") as infile:
             raw = json.load(infile)
     except: # if nothing cached
-        raw =get_raw()
+        raw = get_raw()
         # make a quick save
-        with open("firstround.json", "w") as outfile:
+        with open("agrofunding.json", "w") as outfile:
             json.dump(raw, outfile)
 
     try: # load cached details
-        with open("agrofunding.json", "r") as infile:
+        with open("agrofunding_details.json", "r") as infile:
             results = json.load(infile)
     except: # if nothing cached
-        results = []
+        results = {}
 
     return raw, results
 
@@ -116,9 +132,9 @@ def get_missing_ids(raw, results):
 
 def get_raw():
     """
-    If not yet cached, will get the raw data.
+    Performs a POST to transparenzdatenbank asking for the overall raw data.
     """
-    response = requests.request("POST", url, data=payload, headers = header)
+    response = requests.request("POST", url, data=payload, headers = rawheader)
     raw = response.json()
     return {r.get("id"):r for r in raw}
 
@@ -134,6 +150,7 @@ def crawl(raw, results, missing_ids):
     for id_ in missing_ids:
 
         try:
+            time.sleep(0.5) # avoid hammering the server
             r = raw.get(id_)
             results[id_] = enhance_raw(r)
 
@@ -143,12 +160,13 @@ def crawl(raw, results, missing_ids):
             drawProgressBar(percent)
         except: # some server/network error
             # store cache
-            with open("agrofunding.json", "w") as outfile:
+            with open("agrofunding_details.json", "w") as outfile:
                 json.dump(results, outfile)
 
+        # dumps every 1000 entries to avoid losing progress to network errors
         i += 1
         if i > 1000:
-            with open("agrofunding.json", "w") as outfile:
+            with open("agrofunding_details.json", "w") as outfile:
                 json.dump(results, outfile)
             i = 0
 
@@ -171,7 +189,7 @@ def enhance_raw(r):
         result["postcode"] = "NA"
     else:
         result["postcode"] = int(r.get("plz"))
-        
+
     result["municipality"] = r.get("gemeinde")
     result["year"] = int(r.get("jahr"))
     result["total_amount"] = float(r.get("betrag"))
@@ -181,12 +199,13 @@ def enhance_raw(r):
 
 def get_details(id_):
     """
-    Gets the detailed information for a funding ID.
+    Performs GET requests for the transparenzdatenbank-search and returns
+    detailed information for a funding ID.
     """
     details = []
 
     searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %id_
-    rawdetails = requests.request("GET", searchurl, headers = searchheader).json()
+    rawdetails = requests.request("GET", searchurl, headers = detailsheader).json()
     for rd in rawdetails:
         detail = {}
         detail["id"] = int(rd.get("id"))
@@ -197,28 +216,49 @@ def get_details(id_):
     return details
 
 def save2csv(results, filename):
+    """
+    Exports the extracted data to agrofunding.csv with the following columns:
+    "unique_id", "funding_id", "recipient", "year",
+    "postcode", "municipality", "total_amount",
+    "detail_id", "type", "partial_amount"
+    """
     i = 0
     with open(filename+".csv", "w") as csvfile:
         agrowriter = csv.writer(csvfile, delimiter = ",", quotechar='"')
-        agrowriter.writerow(["unique_id", "funding_id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"])
+        agrowriter.writerow(["unique_id", "funding_id", "recipient", "year",
+                            "postcode", "municipality", "total_amount",
+                            "detail_id", "type", "partial_amount"])
         for result in results.values():
-            metadata = [i, result.get("id"), result.get("recipient"), result.get("year"), result.get("postcode"), result.get("municipality"), result.get("total_amount")]
+            metadata = [i, result.get("id"), result.get("recipient"),
+                        result.get("year"), result.get("postcode"),
+                        result.get("municipality"), result.get("total_amount")]
             for detail in result.get("details"):
-                data = [detail.get("id"), detail.get("type"), detail.get("partial_amount")]
+                data = [detail.get("id"), detail.get("type"),
+                                    detail.get("partial_amount")]
                 agrowriter.writerow([i]+metadata+data)
                 i += 1
 
-def main():
+def setup_folders(foldername):
+    """
+    Checks whether outfolder folder and path exist,
+    creates them if necessary.
+    """
+    if not os.path.exists(foldername):
+        os.makedirs(foldername)
+
+def main(args):
+    setup_folders(args.outputfolder)
+    os.chdir(args.outputfolder)
     raw, old_results = get_cache()
     missing_ids = get_missing_ids(raw, old_results)
     new_results = crawl(raw, old_results, missing_ids)
 
     # store final
-    with open("agrofunding.json", "w") as outfile:
+    with open("agrofunding_details.json", "w") as outfile:
         json.dump(new_results, outfile)
 
     save2csv(new_results, "agrofunding")
 
 
 if __name__ == '__main__':
-    main()
+    main(args)
