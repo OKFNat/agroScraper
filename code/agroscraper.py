@@ -53,36 +53,6 @@ parser.add_argument('--output', dest='outputfolder', help='relative or absolute 
 parser.add_argument('--year', dest='year', help='year of funding data to request')
 args = parser.parse_args()
 
-url = 'http://transparenzdatenbank.at/suche'
-
-rawheader = {"Accept": "application/json, text/plain, */*",
-           "Accept-Encoding": "gzip, deflate",
-           "Accept-Language": "de,en-US;q=0.7,en;q=0.3",
-           "Content-Length": "100",
-           "Content-Type": "application/json;charset=utf-8",
-           "DNT": "1",
-           "Host": "transparenzdatenbank.at",
-           "PAGINATION_CURRENT": "1",
-           "PAGINATION_PER_PAGE": "140000",
-           "Referer": "http://transparenzdatenbank.at/",
-           "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0"
-           }
-
-# json string
-payload = "{\"name\":\"\", \"betrag_von\":\"\", \"betrag_bis\":\"\", \
-            \"gemeinde\":\"\", \"massnahme\":null, \
-            \"jahr\":%s, \"sort\":\"name\"}" %args.year
-
-# create new header for detailed search
-detailsheader = {'Host': 'transparenzdatenbank.at',
-                 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0',
-                 'Accept': 'application/json, text/plain, */*',
-                 'Accept-Language': 'de,en-US;q=0.7,en;q=0.3',
-                 'Accept-Encoding': 'gzip, deflate',
-                 'DNT': '1',
-                 'Referer': 'http://transparenzdatenbank.at/'
-                 }
-
 
 def drawProgressBar(percent, barLen = 20):
     """
@@ -134,6 +104,24 @@ def get_raw():
     """
     Performs a POST to transparenzdatenbank asking for the overall raw data.
     """
+    url = 'http://transparenzdatenbank.at/suche'
+    rawheader = {"Accept": "application/json, text/plain, */*",
+               "Accept-Encoding": "gzip, deflate",
+               "Accept-Language": "de,en-US;q=0.7,en;q=0.3",
+               "Content-Length": "100",
+               "Content-Type": "application/json;charset=utf-8",
+               "DNT": "1",
+               "Host": "transparenzdatenbank.at",
+               "PAGINATION_CURRENT": "1",
+               "PAGINATION_PER_PAGE": "140000",
+               "Referer": "http://transparenzdatenbank.at/",
+               "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0"
+               }
+    # json string
+    payload = "{\"name\":\"\", \"betrag_von\":\"\", \"betrag_bis\":\"\", \
+                \"gemeinde\":\"\", \"massnahme\":null, \
+                \"jahr\":%s, \"sort\":\"name\"}" %args.year
+
     response = requests.request("POST", url, data=payload, headers = rawheader)
     raw = response.json()
     return {r.get("id"):r for r in raw}
@@ -202,9 +190,18 @@ def get_details(id_):
     Performs GET requests for the transparenzdatenbank-search and returns
     detailed information for a funding ID.
     """
-    details = []
-
+    # create new header for detailed search
+    detailsheader = {'Host': 'transparenzdatenbank.at',
+                     'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:42.0) Gecko/20100101 Firefox/42.0',
+                     'Accept': 'application/json, text/plain, */*',
+                     'Accept-Language': 'de,en-US;q=0.7,en;q=0.3',
+                     'Accept-Encoding': 'gzip, deflate',
+                     'DNT': '1',
+                     'Referer': 'http://transparenzdatenbank.at/'
+                     }
     searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %id_
+
+    details = []
     rawdetails = requests.request("GET", searchurl, headers = detailsheader).json()
     for rd in rawdetails:
         detail = {}
