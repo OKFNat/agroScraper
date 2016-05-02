@@ -203,7 +203,7 @@ def save2csv(results, filename):
     "detail_id", "type", "partial_amount"
     """
     i = 0
-    with open(filename+".csv", "w") as csvfile:
+    with open(filename, "w") as csvfile:
         agrowriter = csv.writer(csvfile, delimiter = ",", quotechar='"')
         agrowriter.writerow(["unique_id", "funding_id", "recipient", "year",
                             "postcode", "municipality", "total_amount",
