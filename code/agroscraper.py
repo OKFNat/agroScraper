@@ -6,25 +6,6 @@ Extracting information from transparenzdatenbank.at
 
 Output from the #gutedaten Hackathon in Graz, Sat. 28. Nov. 2015
 
-
-{id:
-    {
-        "id": int,
-        "recipient": "str",
-        "postcode": int,
-        "municipality": "str",
-        "year": int,
-        "total_amount": float
-        "details": [
-            {
-                "id": int,
-                "type": "str",
-                "description": "str",
-                "partial_amount": float
-            }
-        ]
-    }
-}
 """
 
 
@@ -53,10 +34,13 @@ parser.add_argument('--output', dest='outputfolder', help='relative or absolute 
 parser.add_argument('--year', dest='year', help='year of funding data to request')
 args = parser.parse_args()
 
+overall_outfile = "_".join(["agrofunding", args.year]) + ".json"
+details_outfile = "_".join(["agrofunding", "details", args.year]) + ".json"
+csv_outfile = "_".join(["agrofunding", args.year]) + ".csv"
 
 def drawProgressBar(percent, barLen = 20):
     """
-    Draws a progress bar to the command line.
+    Draw a progress bar to the command line.
     """
     sys.stdout.write("\r")
     progress = ""
@@ -71,19 +55,20 @@ def drawProgressBar(percent, barLen = 20):
 
 def get_cache():
     """
-    If nothing cached, will get the raw data.
+    If nothing cached, get the raw data.
+    Returns a tuple of dicts.
     """
     try: # load cached search
-        with open("agrofunding.json", "r") as infile:
+        with open(overall_outfile, "r") as infile:
             raw = json.load(infile)
     except: # if nothing cached
         raw = get_raw()
         # make a quick save
-        with open("agrofunding.json", "w") as outfile:
+        with open(overall_outfile, "w") as outfile:
             json.dump(raw, outfile)
 
     try: # load cached details
-        with open("agrofunding_details.json", "r") as infile:
+        with open(details_outfile, "r") as infile:
             results = json.load(infile)
     except: # if nothing cached
         results = {}
@@ -92,8 +77,8 @@ def get_cache():
 
 def get_missing_ids(raw, results):
     """
-    Compares cached results with overall expected IDs,
-    returns missing ones.
+    Compare cached results with overall expected IDs, return missing ones.
+    Returns a set.
     """
     all_ids = set(raw.keys())
     cached_ids = set(results.keys())
@@ -102,7 +87,8 @@ def get_missing_ids(raw, results):
 
 def get_raw():
     """
-    Performs a POST to transparenzdatenbank asking for the overall raw data.
+    Perform a POST to transparenzdatenbank asking for the overall raw data.
+    Returns a dict.
     """
     url = 'http://transparenzdatenbank.at/suche'
     rawheader = {"Accept": "application/json, text/plain, */*",
@@ -128,7 +114,8 @@ def get_raw():
 
 def crawl(raw, results, missing_ids):
     """
-    Adds missing results by iterating over missing IDs.
+    Add missing results by iterating over missing IDs.
+    Returns a dict.
     """
     # for progress bar
     progress = 0.0
@@ -148,13 +135,13 @@ def crawl(raw, results, missing_ids):
             drawProgressBar(percent)
         except: # some server/network error
             # store cache
-            with open("agrofunding_details.json", "w") as outfile:
+            with open(details_outfile, "w") as outfile:
                 json.dump(results, outfile)
 
         # dumps every 1000 entries to avoid losing progress to network errors
         i += 1
         if i > 1000:
-            with open("agrofunding_details.json", "w") as outfile:
+            with open(details_outfile, "w") as outfile:
                 json.dump(results, outfile)
             i = 0
 
@@ -162,11 +149,8 @@ def crawl(raw, results, missing_ids):
 
 def enhance_raw(r):
     """
-    Reformats the raw data.
-    Adds the detailed information to a raw search result.
-
-    args: r = {raw_search_result}
-
+    Reformat the raw data. Add the detailed information to a raw search result.
+    Returns a dict.
     """
     result = {}
     result["id"] = int(r.get("id"))
@@ -187,8 +171,9 @@ def enhance_raw(r):
 
 def get_details(id_):
     """
-    Performs GET requests for the transparenzdatenbank-search and returns
+    Perform GET requests for the transparenzdatenbank-search and returns
     detailed information for a funding ID.
+    Returns a list.
     """
     # create new header for detailed search
     detailsheader = {'Host': 'transparenzdatenbank.at',
@@ -214,7 +199,7 @@ def get_details(id_):
 
 def save2csv(results, filename):
     """
-    Exports the extracted data to agrofunding.csv with the following columns:
+    Export the extracted data to agrofunding.csv with the following columns:
     "unique_id", "funding_id", "recipient", "year",
     "postcode", "municipality", "total_amount",
     "detail_id", "type", "partial_amount"
@@ -237,8 +222,7 @@ def save2csv(results, filename):
 
 def setup_folders(foldername):
     """
-    Checks whether outfolder folder and path exist,
-    creates them if necessary.
+    Check whether outfolder folder and path exist, create them if necessary.
     """
     if not os.path.exists(foldername):
         os.makedirs(foldername)
@@ -251,10 +235,10 @@ def main(args):
     new_results = crawl(raw, old_results, missing_ids)
 
     # store final
-    with open("agrofunding_details.json", "w") as outfile:
+    with open(details_outfile, "w") as outfile:
         json.dump(new_results, outfile)
 
-    save2csv(new_results, "agrofunding")
+    save2csv(new_results, csv_outfile)
 
 
 if __name__ == '__main__':
