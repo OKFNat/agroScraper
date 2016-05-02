@@ -1,16 +1,16 @@
 # EU Agricultural funding aids
 This scrapers gets data out of [Transparenzdatenbank](http://transparenzdatenbank.at/), which displays EU aids for Austrian agricultural businesses. The scraper exports the data into CSV so it can be analyzed and visualized.
 
-This repository provides the code and documentation, and keeps track of [bugs as well as feature requests(https://github.com/OKFNat/agroScraper/issues).
+This repository provides the code and documentation, and keeps track of [bugs as well as feature requests](https://github.com/OKFNat/agroScraper/issues).
 
-* Team: [Gute Tagen für gute Daten](http://okfn.at/gutedaten/) of [Open Knowledge Austria](http://okfn.at/)
+* Team: [Gute Taten für gute Daten](http://okfn.at/gutedaten/) of [Open Knowledge Austria](http://okfn.at/)
 * Status: Production
 * Documentation: English
 * Licenses:
   * Content: [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/)
   * Software: MIT License
 
-Used Software
+**Used Software**
 
 The sourcecode is written in Python 3. It was created with use of [requests](http://docs.python-requests.org/en/master/).
 
@@ -18,20 +18,20 @@ The sourcecode is written in Python 3. It was created with use of [requests](htt
 
 ### Description
 
-The scraper first retrieves the overall data about funding
+The scraper first retrieves the overall data about funding aid and saves it to a local file. In a second pass the scraper retrieves the detailed data for the funding IDs mentioned in the overall data. The second pass may take few hours to complete and to avoid data loss due to network errors, the scraper regularly caches the detailed data - this also reduces server strain. The retrieved data is then reformatted and saved to a CSV-file.
 
 ### Run scraper
 
 You need Python 3 for running this, it handles encoding better.
 
-```python
+```bash
 python3 agroscraper.py --output OUTPUTFOLDERNAME --year 2014
 ```
 
-The scraper produces two JSON-files and one CSV-file:
-* `agrofunding.json` of fundings, containing IDs, names of recipients, postcode and municipality, year and total amount.
-* `agrofunding_details.json` of fundings, containing all of the above plus a detailed description per funding with type, description and partial amounts.
-* `agrofunding.csv` with the following headers: "unique_id", "funding_id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"
+The scraper produces two JSON-files and one CSV-file, where `YYYY` will be replaced by the year the funding data is about:
+* `agrofunding_YYYY.json`, containing IDs, names of recipients, postcode and municipality, year and total amount.
+* `agrofunding_details_YYYY.json`, containing all of the above plus a detailed description per funding with type, description and partial amounts.
+* `agrofunding_YYYY.csv` with the following headers: "unique_id", "funding_id", "recipient", "year", "postcode", "municipality", "total_amount", "detail_id", "type", "partial_amount"
 
 ## Data Input
 
@@ -39,18 +39,20 @@ The scraper produces two JSON-files and one CSV-file:
 
 **Scope of dataset**
 
-The current database provides data only for 2014.
+The current database provides data only for 2014 (as at May 2015).
 
 > Demnach müssen ab 2015 auch wieder natürliche Personen unter den Empfängern veröffentlicht werden. Zu veröffentlichen sind: Name, Gemeinde samt Postleitzahl, Betrag der Zahlungen aus dem EGFL, Betrag der Zahlungen aus dem ELER einschließlich der nationalen Anteile sowie Bezeichnung und Beschreibung der geförderten Maßnahmen unter Angabe des jeweiligen EU-Fonds des vorangegangenen EU- Haushaltsjahrs. Das EU-Haushaltsjahr beginnt am 16.10. eines Jahres und endet am 15.10. des Folgejahres. Die veröffentlichten Daten bleiben vom Zeitpunkt ihrer ersten Veröffentlichung zwei Jahre lang zugänglich. Ausgenommen von der namentlichen Veröffentlichungspflicht sind lediglich jene Personen, deren jährliche Zahlungen 1.250,-- Euro nicht übersteigen. In diesem Fall werden die Empfänger in kodierter Form veröffentlicht.
 
 **Data errors found**
+
+None so far, please [raise an issue]((https://github.com/OKFNat/agroScraper/issues) if you detect one.
 
 ### Data Output
 
 ### Data model of agrofunding.json
 
 ```
-{id:
+{"id":
   {"betrag": float,
  "gemeinde": "str",
  "id": "str",
@@ -63,7 +65,7 @@ The current database provides data only for 2014.
 ### Data model of agrofunding_details.json
 
 ```
-{id:
+{"id":
 	{
 		"id": int,
 		"recipient": "str",
@@ -83,7 +85,13 @@ The current database provides data only for 2014.
 }
 ```
 
-### Data model of
+### Data model of agrofunding.csv
+
+Tabular data (delimiter `,`, quotechar `"`) with the following columns:
+
+> unique_id, funding_id, recipient, year, postcode, municipality, total_amount, detail_id, type, partial_amount
+
+Fundings are recorded individually, so if one recipient received more than one funding a new entry (row) is created for each.
 
 ## Contributing
 
