@@ -53,12 +53,14 @@ None so far, please [raise an issue](https://github.com/OKFNat/agroScraper/issue
 
 ```
 {"id":
-  {"betrag": float,
- "gemeinde": "str",
- "id": "str",
- "jahr": "str",
- "name": "str",
- "plz": int}
+  {
+   "betrag": float,
+   "gemeinde": "str",
+   "id": "str",
+   "jahr": "str",
+   "name": "str",
+   "plz": int
+  }
 }
 ```
 
