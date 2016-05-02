@@ -45,7 +45,7 @@ The current database provides data only for 2014 (as at May 2015).
 
 **Data errors found**
 
-None so far, please [raise an issue]((https://github.com/OKFNat/agroScraper/issues) if you detect one.
+None so far, please [raise an issue](https://github.com/OKFNat/agroScraper/issues) if you detect one.
 
 ### Data Output
 
