@@ -22,7 +22,6 @@ import requests
 
 import os
 import sys
-import time
 import argparse
 
 import json
@@ -125,7 +124,6 @@ def crawl(raw, results, missing_ids):
     for id_ in missing_ids:
 
         try:
-            time.sleep(0.5) # avoid hammering the server
             r = raw.get(id_)
             results[id_] = enhance_raw(r)
 
