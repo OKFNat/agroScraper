@@ -75,7 +75,8 @@ None so far, please [raise an issue](https://github.com/OKFNat/agroScraper/issue
 		"municipality": "str",
 		"year": int,
 		"total_amount": float
-		"details": [
+		"details":
+    [
 			{
 				"id": int,
 				"type": "str",
