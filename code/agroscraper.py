@@ -209,7 +209,7 @@ def save2csv(results, filename):
                             "postcode", "municipality", "total_amount",
                             "detail_id", "type", "partial_amount"])
         for result in results.values():
-            metadata = [i, result.get("id"), result.get("recipient"),
+            metadata = [result.get("id"), result.get("recipient"),
                         result.get("year"), result.get("postcode"),
                         result.get("municipality"), result.get("total_amount")]
             for detail in result.get("details"):
