@@ -39,6 +39,15 @@ The scraper produces two JSON-files and one CSV-file, where `YYYY` will be repla
 
 ## DATA INPUT
 
+The original data table displays recipients ("Zahlungsempfänger"), postcode ("PLZ"), municipality ("Gemeinde"), year ("Jahr") and total amount ("Betrag").
+
+| Zahlungsempfänger | PLZ | Gemeinde | Jahr | Betrag |
+|---|---|---|---|
+| NAME | XXXX | ORTSNAME | 2014 | 7812,00 |
+
+When clicking on an entry it opens up and displays detailed information, such as type ("Art der Förderung"), a short description ("Kurzbeschreibung") and itemized detailed amounts ("Teilbeträge").
+
+
 ### Soundness
 
 **Scope of dataset**
