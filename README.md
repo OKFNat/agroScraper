@@ -1,5 +1,5 @@
 # EU Agricultural Funding Scraper
-==============================
+
 This scrapers gets data out of [Transparenzdatenbank](http://transparenzdatenbank.at/), which displays EU aids for Austrian agricultural businesses. The scraper exports the data into CSV so it can be analyzed and visualized.
 
 This repository provides the code and documentation, and keeps track of [bugs as well as feature requests](https://github.com/OKFNat/agroScraper/issues).
@@ -147,14 +147,16 @@ Visit http://opensource.org/licenses/MIT to learn more about the MIT License.
 
 ## REPOSITORY
 - [README.md](README.md):
-- [code/agroscraper.py](code/agroscraper.py): 
-- [CHANGELOG.md](CHANGELOG.md): 
-- [LICENSE](LICENSE): 
+- [code/agroscraper.py](code/agroscraper.py):
+- [CHANGELOG.md](CHANGELOG.md):
+- [LICENSE](LICENSE):
 
 ## CHANGELOG
 See the [whole history](CHANGELOG.md). Next the actual version.
 
-### Version 0.1 - YYYY-MM-DD
-**init repo**
 
+### Version 0.0.3 - 2016-05-02
 
+* moved global variables to respective functions
+* improved format, readability, doc strings
+* fixed export errors
