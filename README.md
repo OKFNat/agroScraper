@@ -98,7 +98,11 @@ Tabular data (delimiter `,`, quotechar `"`) with the following columns:
 
 > unique_id, funding_id, recipient, year, postcode, municipality, total_amount, detail_id, type, partial_amount
 
-Fundings are recorded individually, so if one recipient received more than one funding a new entry (row) is created for each.
+| unique_id | funding_id | recipient | year | postcode | municipality | total_amount | detail_id | type | partial_amount |
+|-----|-----|----|----|----|----|----|------|-------|-------|
+|4XYZZZ|47XYZ|AGRARMARKT AUSTRIA|2014|XXXX|LOCATION NAME|24183721.77|8|Verwaltung EU-Fonds - Technische Hilfe|24183721.77|
+
+Fundings are recorded individually, so if one recipient received more than one funding a new entry (row) is created for each. Please note that decimal numbers are indicated by a point `.` when reading in with Excel/LibreOffice.
 
 ## CONTRIBUTING
 
@@ -152,7 +156,7 @@ Visit http://opensource.org/licenses/MIT to learn more about the MIT License.
 - [LICENSE](LICENSE):
 
 ## CHANGELOG
-See the [whole history](CHANGELOG.md). Next the actual version.
+See the [whole history](CHANGELOG.md). Next the current version.
 
 
 ### Version 0.0.3 - 2016-05-02
