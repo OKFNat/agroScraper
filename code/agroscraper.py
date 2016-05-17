@@ -182,7 +182,7 @@ def get_details(id_):
                      'DNT': '1',
                      'Referer': 'http://transparenzdatenbank.at/'
                      }
-    searchurl = 'http://transparenzdatenbank.at/suche/details/%s/2014' %id_
+    searchurl = 'http://transparenzdatenbank.at/suche/details/%s/%s' %(id_, args.year)
 
     details = []
     rawdetails = requests.request("GET", searchurl, headers = detailsheader).json()
